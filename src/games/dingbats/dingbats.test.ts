@@ -4,15 +4,15 @@ import { pickPuzzles, DINGBAT_PUZZLES } from "@/games/dingbats/dingbats.data";
 
 describe("Dingbats matching", () => {
   it("matches the canonical answer", () => {
-    expect(dingbatMatches("db-001", "man overboard")).toBe(true);
+    expect(dingbatMatches("db-004", "i understand")).toBe(true);
   });
 
   it("matches accepted answers", () => {
-    expect(dingbatMatches("db-001", "MAN OVER BOARD")).toBe(true);
+    expect(dingbatMatches("db-004", "UNDERSTAND")).toBe(true);
   });
 
   it("rejects wrong answers", () => {
-    expect(dingbatMatches("db-001", "overboard man")).toBe(false);
+    expect(dingbatMatches("db-004", "overboard man")).toBe(false);
   });
 
   it("matches Get Ship Done", () => {
@@ -51,9 +51,9 @@ describe("Dingbats scoring", () => {
   it("scores three correct puzzles", () => {
     const result = scoreDingbats({
       answers: [
-        { id: "db-001", guess: "man overboard", usedHint: false },
-        { id: "db-002", guess: "tricycle", usedHint: false },
-        { id: "db-003", guess: "bicycle", usedHint: false },
+        { id: "db-004", guess: "i understand", usedHint: false },
+        { id: "db-005", guess: "mind over matter", usedHint: false },
+        { id: "db-007", guess: "long underwear", usedHint: false },
       ],
     });
     expect(result).toMatchObject({ maxScore: 100 });
@@ -63,8 +63,8 @@ describe("Dingbats scoring", () => {
   it("scores two correct puzzles out of two as 100", () => {
     const result = scoreDingbats({
       answers: [
-        { id: "db-001", guess: "man overboard", usedHint: false },
-        { id: "db-002", guess: "tricycle", usedHint: false },
+        { id: "db-004", guess: "i understand", usedHint: false },
+        { id: "db-005", guess: "mind over matter", usedHint: false },
       ],
     });
     if ("score" in result) expect(result.score).toBe(100);
