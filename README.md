@@ -1,36 +1,137 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Security Arcade
 
-## Getting Started
+Local-first booth game for a Bot Protection / API Protection event stand. Players enter a name, spin a wheel, play a short game, and land on a leaderboard.
 
-First, run the development server:
+## Requirements
+
+- Node.js 20+
+- npm 10+
+
+## Installation
+
+```bash
+npm install
+```
+
+## Database setup
+
+```bash
+npx prisma migrate dev --name init
+```
+
+SQLite file: `prisma/dev.db` (created from `DATABASE_URL` in `.env`).
+
+Copy env if needed:
+
+```bash
+cp .env.example .env
+```
+
+Default admin password: `arcade` (`ADMIN_PASSWORD`).
+
+## Run locally
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Path | What |
+| --- | --- |
+| `/` | Attract screen |
+| `/play` | Name → wheel → game |
+| `/leaderboard` | Today / all-time scores |
+| `/booth` | Large-screen mode (F11 / fullscreen) |
+| `/admin` | Enable games, clear scores |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Build / production
 
-## Learn More
+```bash
+npm run build
+npm start
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Tests
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm test
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Question bank
 
-## Deploy on Vercel
+Open [http://localhost:3000/admin](http://localhost:3000/admin) and sign in with `ADMIN_PASSWORD` (default `arcade`).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+There you can view, add, edit, and delete:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Word Battle words
+- Dingbats (emoji/text, answer, hint, set)
+- Perfect 10 target seconds and tries
+- Bot or Not scenarios (facts JSON + bot/human)
+
+The first visit copies the bundled sample sets into SQLite. After that, games use the edited list.
+
+## Adding a new game
+
+1. Create `src/games/<id>/<Name>Game.tsx` (the UI).
+2. Create `src/games/<id>/<id>.data.ts` (puzzles/words/config).
+3. Create `src/games/<id>/<id>.definition.ts` with a `GameDefinition`:
+   - `id`, `name`, `description`, `howToPlay`, `icon`, `accent`
+   - `enabled`, `weight`, `maxScore`
+   - `scoreFromPayload(payload)` — server-side scoring
+4. Register the definition in `src/games/registry.ts`.
+5. Map the component in `src/games/client-registry.ts`.
+6. Run the app.
+
+The wheel, play flow, leaderboard tabs, admin toggles, and score API pick up the new `id` automatically. No schema change.
+
+## Adding content
+
+Edit data files only. Restart the dev server if it does not hot-reload.
+
+### Word Battle words
+
+File: `src/games/wordle/wordle.data.ts`
+
+```ts
+{ word: "AGENT", difficulty: "easy", category: "security" },
+```
+
+Keep `word` length equal to `WORD_BATTLE_CONFIG.wordLength` (5 unless you change it).
+
+### Dingbats
+
+File: `src/games/dingbats/dingbats.data.ts`
+
+```ts
+{
+  id: "ap-011",
+  set: "api-protection", // or "harness" | "classic"
+  difficulty: "easy",
+  display: "emoji",
+  content: "🗽  ⚡  🌉",
+  answer: "LAND SPEED VIOLATION",
+  acceptedAnswers: ["IMPOSSIBLE TRAVEL"],
+  hint: "Too fast to be one human.",
+},
+```
+
+A round uses `DINGBATS_CONFIG.activeSets` in `src/games/dingbats/dingbats.data.ts`.
+
+Booth default is team-only:
+
+```ts
+activeSets: ["harness"],
+```
+
+To mix in threat-type or classic puzzles: `activeSets: ["harness", "api-protection", "classic"]`.
+
+### Bot or Not
+
+File: `src/games/botOrNot/botOrNot.data.ts`
+
+Add another scenario object with `facts`, `answer: "bot" | "human"`, and `explanation`.
+
+### Perfect 10 scoring
+
+Thresholds live in `src/games/perfect10/perfect10.data.ts`, not in the UI.

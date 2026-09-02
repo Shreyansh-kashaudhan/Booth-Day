@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id          String      @id @default(cuid())
+  displayName String      @unique
+  createdAt   DateTime    @default(now())
+  scores      GameScore[]
+}
+
+model GameScore {
+  id        String   @id @default(cuid())
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  gameId    String
+  score     Int
+  maxScore  Int
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  @@index([gameId, score])
+  @@index([createdAt])
+}
+
+model GameToggle {
+  gameId  String  @id
+  enabled Boolean @default(true)
+}
+
+model WordItem {
+  id         String @id @default(cuid())
+  word       String @unique
+  difficulty String @default("easy")
+  category   String @default("security")
+}
+
+model DingbatItem {
+  id               String @id @default(cuid())
+  set              String @default("harness")
+  difficulty       String @default("easy")
+  content          String
+  answer           String
+  acceptedAnswers  String @default("[]")
+  hint             String @default("")
+  display          String @default("emoji")
+}
+
+model BotItem {
+  id           String @id @default(cuid())
+  title        String
+  difficulty   String @default("easy")
+  facts        String
+  answer       String
+  explanation  String
+}
+
+model Perfect10Settings {
+  id            String @id @default("default")
+  targetSeconds Float  @default(10)
+  attempts      Int    @default(3)
+}
