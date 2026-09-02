@@ -23,9 +23,14 @@ export const DINGBATS_CONFIG = {
   timeLimitSeconds: 60,
   correctScore: 34,
   hintPenalty: 10,
-  // booth: team puzzles only. Add "api-protection" / "classic" to mix in other sets.
-  activeSets: ["harness"] as DingbatSet[],
+  activeSets: ["harness", "api-protection"] as DingbatSet[],
 };
+
+export function clampPuzzlesPerRound(value: unknown): number {
+  const n = Math.floor(Number(value));
+  if (!Number.isFinite(n)) return DINGBATS_CONFIG.puzzlesPerRound;
+  return Math.min(50, Math.max(1, n));
+}
 
 function puzzleSet(puzzle: DingbatPuzzle): DingbatSet {
   return puzzle.set ?? "classic";
@@ -45,14 +50,18 @@ export function pickPuzzles(
   all: DingbatPuzzle[] = DINGBAT_PUZZLES,
   sets: DingbatSet[] = DINGBATS_CONFIG.activeSets,
 ): DingbatPuzzle[] {
+  const want = Math.max(0, Math.floor(count));
+  if (want === 0) return [];
   const allowed = sets.length ? sets : DINGBATS_CONFIG.activeSets;
   const pool = all.filter((p) => allowed.includes(puzzleSet(p)));
   const source = pool.length ? pool : all;
+  if (!source.length) return [];
+
   const chosen: DingbatPuzzle[] = [];
   const used = new Set<string>();
   if (allowed.length > 1) {
     for (const set of allowed) {
-      if (chosen.length >= count) break;
+      if (chosen.length >= want) break;
       const fromSet = shuffle(source.filter((p) => puzzleSet(p) === set && !used.has(p.id)));
       if (fromSet[0]) {
         chosen.push(fromSet[0]);
@@ -60,11 +69,18 @@ export function pickPuzzles(
       }
     }
   }
-  const rest = shuffle(source.filter((p) => !used.has(p.id)));
-  while (chosen.length < count && rest.length) {
+
+  let rest = shuffle(source.filter((p) => !used.has(p.id)));
+  while (chosen.length < want && rest.length) {
     const next = rest.pop()!;
     chosen.push(next);
     used.add(next.id);
+  }
+
+  while (chosen.length < want) {
+    rest = shuffle(source);
+    const room = want - chosen.length;
+    chosen.push(...rest.slice(0, room));
   }
   return shuffle(chosen);
 }
@@ -159,6 +175,26 @@ export const DINGBAT_PUZZLES: DingbatPuzzle[] = [
     answer: "CODE PIPELINE",
     acceptedAnswers: ["PIPELINE", "CI PIPELINE", "CD PIPELINE"],
     hint: "Code + pipeline.",
+  },
+  {
+    id: "hn-007",
+    set: "harness",
+    difficulty: "easy",
+    display: "emoji",
+    content: "🥧  🅿️  ⎯",
+    answer: "PIPELINE",
+    acceptedAnswers: ["PIPE LINE", "CI PIPELINE", "CD PIPELINE"],
+    hint: "Pie + P + line.",
+  },
+  {
+    id: "hn-008",
+    set: "harness",
+    difficulty: "easy",
+    display: "emoji",
+    content: "🇩  ⏯️  🌿",
+    answer: "DEPLOYMENT",
+    acceptedAnswers: ["DEPLOY", "D PLAY MINT"],
+    hint: "The 4th letter of the alphabet, a media button, and an herb. D + Play + Mint.",
   },
   {
     id: "ap-001",
@@ -259,5 +295,35 @@ export const DINGBAT_PUZZLES: DingbatPuzzle[] = [
     answer: "DATA SCRAPING",
     acceptedAnswers: ["SCRAPING", "SCRAPER", "API SCRAPING"],
     hint: "Data + scraping.",
+  },
+  {
+    id: "ap-011",
+    set: "api-protection",
+    difficulty: "easy",
+    display: "emoji",
+    content: "🐀\n🛑",
+    answer: "RATE LIMITING",
+    acceptedAnswers: ["RATE LIMIT", "RATELIMITING", "RAT LIMITING"],
+    hint: "Rat + Limiting",
+  },
+  {
+    id: "ap-012",
+    set: "api-protection",
+    difficulty: "easy",
+    display: "emoji",
+    content: "🐿️\n💉",
+    answer: "SQL INJECTION",
+    acceptedAnswers: ["SQLI", "SQL INJECT"],
+    hint: "SQuirreL + Injection",
+  },
+  {
+    id: "ap-013",
+    set: "api-protection",
+    difficulty: "medium",
+    display: "emoji",
+    content: "❌\n👁️\n📜(.sh)",
+    answer: "CROSS SITE SCRIPTING",
+    acceptedAnswers: ["XSS", "CROSS-SITE SCRIPTING", "CROSS SITE SCRIPT"],
+    hint: "Type of threat. Cross + Sight + Scripting.",
   },
 ];

@@ -136,6 +136,34 @@ function DingbatsPanel({
   return (
     <div className="space-y-6">
       <form
+        className="flex max-w-md flex-wrap items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const form = e.currentTarget;
+          const input = form.elements.namedItem("puzzlesPerRound") as HTMLInputElement;
+          send("POST", { kind: "dingbatsSettings", puzzlesPerRound: Number(input.value) });
+        }}
+      >
+        <label className="text-sm">
+          Puzzles per round
+          <input
+            className="arcade-input mt-1 w-28"
+            name="puzzlesPerRound"
+            type="number"
+            min={1}
+            max={50}
+            defaultValue={catalog.dingbatsSettings.puzzlesPerRound}
+            key={catalog.dingbatsSettings.puzzlesPerRound}
+          />
+        </label>
+        <button className="arcade-btn arcade-btn-gold px-4 py-2 text-sm" type="submit" disabled={busy}>
+          Save
+        </button>
+        <p className="basis-full text-xs text-cream/50">
+          A round shows this many puzzles (or fewer if the active set is smaller). 1–50.
+        </p>
+      </form>
+      <form
         className="grid gap-2"
         onSubmit={(e) => {
           e.preventDefault();

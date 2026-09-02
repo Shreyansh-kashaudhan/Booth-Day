@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/admin";
 import { prisma } from "@/lib/db";
 import { loadCatalog, seedCatalog } from "@/lib/catalog";
+import { clampPuzzlesPerRound } from "@/games/dingbats/dingbats.data";
 
 export async function GET() {
   if (!(await isAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -59,6 +60,13 @@ export async function POST(request: Request) {
           targetSeconds: Number(body.targetSeconds) || 10,
           attempts: Number(body.attempts) || 3,
         },
+      });
+    } else if (kind === "dingbatsSettings") {
+      const puzzlesPerRound = clampPuzzlesPerRound(body.puzzlesPerRound);
+      await prisma.dingbatsSettings.upsert({
+        where: { id: "default" },
+        create: { id: "default", puzzlesPerRound },
+        update: { puzzlesPerRound },
       });
     } else {
       return NextResponse.json({ error: "Unknown kind" }, { status: 400 });

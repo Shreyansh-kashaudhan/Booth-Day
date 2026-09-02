@@ -22,20 +22,21 @@ export function scoreDingbats(payload: unknown, puzzles = DINGBAT_PUZZLES): Game
   const answers = (payload as DingbatsPayload).answers;
   if (!Array.isArray(answers)) return { error: "Invalid answers" };
 
-  let raw = 0;
   let correct = 0;
+  let hintCount = 0;
   for (const item of answers) {
     if (!item || typeof item.id !== "string" || typeof item.guess !== "string") {
       return { error: "Invalid answer row" };
     }
     if (matches(item.id, item.guess, puzzles)) {
       correct += 1;
-      raw += DINGBATS_CONFIG.correctScore;
-      if (item.usedHint) raw -= DINGBATS_CONFIG.hintPenalty;
+      if (item.usedHint) hintCount += 1;
     }
   }
 
+  const total = answers.length;
   const maxScore = 100;
+  const raw = total === 0 ? 0 : Math.round((correct / total) * maxScore) - hintCount * DINGBATS_CONFIG.hintPenalty;
   return {
     score: clampScore(raw, maxScore),
     maxScore,

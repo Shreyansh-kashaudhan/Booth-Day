@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/db";
 import { WORD_BATTLE_WORDS, type WordBattleEntry } from "@/games/wordle/wordle.data";
-import { DINGBAT_PUZZLES, type DingbatPuzzle } from "@/games/dingbats/dingbats.data";
+import { DINGBAT_PUZZLES, DINGBATS_CONFIG, clampPuzzlesPerRound, type DingbatPuzzle } from "@/games/dingbats/dingbats.data";
 import { BOT_OR_NOT_SCENARIOS, type BotOrNotScenario } from "@/games/botOrNot/botOrNot.data";
 import { PERFECT10_CONFIG } from "@/games/perfect10/perfect10.data";
 
 export type Catalog = {
   words: Array<WordBattleEntry & { id: string }>;
   dingbats: DingbatPuzzle[];
+  dingbatsSettings: { puzzlesPerRound: number };
   bots: BotOrNotScenario[];
   perfect10: { targetSeconds: number; attempts: number };
 };
@@ -26,12 +27,6 @@ function toDingbatRow(p: DingbatPuzzle) {
   };
 }
 
-function dingbatFields(p: DingbatPuzzle) {
-  const row = toDingbatRow(p);
-  const { id: _id, ...fields } = row;
-  return fields;
-}
-
 export async function seedCatalog() {
   if (seeded) return;
   if ((await prisma.wordItem.count()) === 0) {
@@ -47,14 +42,6 @@ export async function seedCatalog() {
     await prisma.dingbatItem.createMany({
       data: DINGBAT_PUZZLES.map(toDingbatRow),
     });
-  } else {
-    for (const p of DINGBAT_PUZZLES.filter((item) => item.id.startsWith("hn-") || item.id.startsWith("ap-"))) {
-      await prisma.dingbatItem.upsert({
-        where: { id: p.id },
-        create: toDingbatRow(p),
-        update: dingbatFields(p),
-      });
-    }
   }
   if ((await prisma.botItem.count()) === 0) {
     await prisma.botItem.createMany({
@@ -74,6 +61,14 @@ export async function seedCatalog() {
         id: "default",
         targetSeconds: PERFECT10_CONFIG.targetSeconds,
         attempts: PERFECT10_CONFIG.attempts,
+      },
+    });
+  }
+  if ((await prisma.dingbatsSettings.count()) === 0) {
+    await prisma.dingbatsSettings.create({
+      data: {
+        id: "default",
+        puzzlesPerRound: DINGBATS_CONFIG.puzzlesPerRound,
       },
     });
   }
@@ -107,11 +102,12 @@ function parseAccepted(raw: string): string[] {
 
 export async function loadCatalog(): Promise<Catalog> {
   await seedCatalog();
-  const [words, dingbats, bots, perfect] = await Promise.all([
+  const [words, dingbats, bots, perfect, dingbatsSettings] = await Promise.all([
     prisma.wordItem.findMany({ orderBy: { word: "asc" } }),
     prisma.dingbatItem.findMany({ orderBy: { set: "asc" } }),
     prisma.botItem.findMany({ orderBy: { title: "asc" } }),
     prisma.perfect10Settings.findUnique({ where: { id: "default" } }),
+    prisma.dingbatsSettings.findUnique({ where: { id: "default" } }),
   ]);
   return {
     words: words.map((w) => ({
@@ -130,6 +126,9 @@ export async function loadCatalog(): Promise<Catalog> {
       hint: p.hint || undefined,
       display: (p.display as DingbatPuzzle["display"]) ?? "text",
     })),
+    dingbatsSettings: {
+      puzzlesPerRound: clampPuzzlesPerRound(dingbatsSettings?.puzzlesPerRound ?? DINGBATS_CONFIG.puzzlesPerRound),
+    },
     bots: bots.map((s) => ({
       id: s.id,
       title: s.title,

@@ -23,7 +23,7 @@ export function DingbatsGame({ onComplete }: GameComponentProps) {
 
   useEffect(() => {
     if (!catalog || puzzles) return;
-    setPuzzles(pickPuzzles(DINGBATS_CONFIG.puzzlesPerRound, catalog.dingbats));
+    setPuzzles(pickPuzzles(catalog.dingbatsSettings?.puzzlesPerRound ?? DINGBATS_CONFIG.puzzlesPerRound, catalog.dingbats));
   }, [catalog, puzzles]);
 
   if (!puzzles) {

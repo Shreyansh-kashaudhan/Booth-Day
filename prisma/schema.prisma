@@ -65,3 +65,8 @@ model Perfect10Settings {
   targetSeconds Float  @default(10)
   attempts      Int    @default(3)
 }
+
+model DingbatsSettings {
+  id               String @id @default("default")
+  puzzlesPerRound  Int    @default(3)
+}

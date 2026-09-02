@@ -32,6 +32,19 @@ describe("Dingbats matching", () => {
   it("matches land speed violation", () => {
     expect(dingbatMatches("ap-001", "land speed violation")).toBe(true);
   });
+
+  it("matches rate limiting, SQL injection, and XSS", () => {
+    expect(dingbatMatches("ap-011", "rate limiting")).toBe(true);
+    expect(dingbatMatches("ap-012", "sqli")).toBe(true);
+    expect(dingbatMatches("ap-013", "xss")).toBe(true);
+    expect(dingbatMatches("ap-013", "crosssitescripting")).toBe(true);
+  });
+
+  it("matches pipeline and deployment", () => {
+    expect(dingbatMatches("hn-007", "pipeline")).toBe(true);
+    expect(dingbatMatches("hn-008", "deployment")).toBe(true);
+    expect(dingbatMatches("hn-008", "deploy")).toBe(true);
+  });
 });
 
 describe("Dingbats scoring", () => {
@@ -47,10 +60,30 @@ describe("Dingbats scoring", () => {
     if ("score" in result) expect(result.score).toBe(100);
   });
 
-  it("defaults to Harness team puzzles", () => {
+  it("scores two correct puzzles out of two as 100", () => {
+    const result = scoreDingbats({
+      answers: [
+        { id: "db-001", guess: "man overboard", usedHint: false },
+        { id: "db-002", guess: "tricycle", usedHint: false },
+      ],
+    });
+    if ("score" in result) expect(result.score).toBe(100);
+  });
+
+  it("mixes Harness and API Protection by default", () => {
     const round = pickPuzzles(3, DINGBAT_PUZZLES);
-    expect(round.every((p) => p.set === "harness")).toBe(true);
+    const sets = new Set(round.map((p) => p.set ?? "classic"));
+    expect(sets.has("classic")).toBe(false);
     expect(round).toHaveLength(3);
+    expect(sets.has("harness")).toBe(true);
+    expect(sets.has("api-protection")).toBe(true);
+  });
+
+  it("picks the requested number of puzzles and repeats if needed", () => {
+    expect(pickPuzzles(2, DINGBAT_PUZZLES)).toHaveLength(2);
+    expect(pickPuzzles(20, DINGBAT_PUZZLES)).toHaveLength(20);
+    const tiny = DINGBAT_PUZZLES.filter((p) => p.set === "harness").slice(0, 2);
+    expect(pickPuzzles(5, tiny, ["harness"])).toHaveLength(5);
   });
 
   it("can mix sets when configured", () => {
