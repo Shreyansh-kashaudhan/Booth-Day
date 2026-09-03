@@ -1,6 +1,6 @@
 "use client";
 
-import { PERFECT10_CONFIG } from "@/games/perfect10/perfect10.data";
+import { PERFECT10_CONFIG, runningTimerOpacity } from "@/games/perfect10/perfect10.data";
 import { scorePerfect10 } from "@/games/perfect10/perfect10.definition";
 import type { GameComponentProps } from "@/games/types";
 import { sfx } from "@/lib/sound";
@@ -88,15 +88,23 @@ export function Perfect10Game({ onComplete }: GameComponentProps) {
   const urgency = phase === "running" && display > targetSeconds - 1.5;
   const lastScore = phase === "review" ? scorePerfect10(attemptsMs.at(-1) ?? 0, targetSeconds) : null;
 
+  const timerOpacity = phase === "running" ? runningTimerOpacity(display) : 1;
+
   return (
     <div className="flex flex-col items-center gap-6">
       <p className="font-mono uppercase tracking-[0.4em] text-cream/60">
         Stop on {targetSeconds.toFixed(2)} · try {Math.min(tryNumber, maxAttempts)} / {maxAttempts}
       </p>
-      <div className={`font-display text-8xl tabular-nums ${urgency ? "text-magenta animate-pulse" : "text-ticket"}`}>
+      <div
+        className={`font-display text-8xl tabular-nums ${urgency ? "text-magenta animate-pulse" : "text-ticket"}`}
+        style={{ opacity: timerOpacity, transition: phase === "running" ? undefined : "opacity 0.2s ease" }}
+      >
         {display.toFixed(2)}
       </div>
-      <p className="font-mono text-sm uppercase tracking-widest text-cream/50">Spacebar also starts and stops</p>
+      <p className="font-mono text-sm uppercase tracking-widest text-cream/50">
+        {phase === "ready" ? "The clock fades after 6 seconds — feel for 10. " : ""}
+        Spacebar also starts and stops
+      </p>
       {phase === "ready" ? (
         <button className="arcade-btn arcade-btn-gold text-2xl" type="button" onClick={start}>
           Start
